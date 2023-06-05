@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TFL Journey API</title>
+  <style>
+    #input-container {
+      width: 50%;
+      height: 20vh;
+      float: left;
+      overflow-y: scroll;
+      background-color: #f2f2f2;
+    }
+  </style>
+  <script>
+    function fetchData() {
+      const startLocation = document.getElementById('start-location').value;
+      const destination = "111 Buckingham Palace Road London, SW1W 0DT";
+      const dateTime = document.getElementById('date-time').value;
+      const apiKey = "92f8f284495c4629a9419d6df2efb899";
+      const sortingMethod = document.getElementById('sorting-method').value;
+
+      let endpoint = `https://api.tfl.gov.uk/Journey/JourneyResults/${startLocation}/to/${encodeURIComponent(destination)}?apiKey=${apiKey}`;
+
+      if (sortingMethod === 'fastest') {
+        endpoint += '&sort=fastest';
+      } else if (sortingMethod === 'least-changes') {
+        endpoint += '&sort=leastChanges';
+      }
+      // Add more conditions for additional sorting options if needed
+
+      fetch(endpoint)
+        .then(response => response.json())
+        .then(data => {
+          console.log(data); // Display the retrieved data in the browser console
+          displayData(data); // Pass the data to the displayData function
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    }
+
+    function displayData(data) {
+      const resultContainer = document.getElementById('result-container');
+      resultContainer.textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</head>
+<body>
+  <div id="input-container">
+    <h1>TFL Journey API</h1>
+    <label for="start-location">Start Location:</label>
+    <input type="text" id="start-location">
+    <label for="date-time">Date and Time:</label>
+    <input type="datetime-local" id="date-time">
+    <label for="sorting-method">Sorting Method:</label>
+    <select id="sorting-method">
+      <option value="default">Default</option>
+      <option value="fastest">Fastest Journey</option>
+      <option value="least-changes">Least Changes</option>
+      <!-- Add more sorting options if needed -->
+    </select>
+    <button onclick="fetchData()">Fetch Data</button>
+  </div>
+  <pre id="result-container"></pre>
+</body>
+</html>
