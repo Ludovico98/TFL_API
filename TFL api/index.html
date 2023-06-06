@@ -21,12 +21,12 @@
 
       let endpoint = `https://api.tfl.gov.uk/Journey/JourneyResults/${startLocation}/to/${encodeURIComponent(destination)}?apiKey=${apiKey}`;
 
+      // Add more conditions for additional sorting options if needed
       if (sortingMethod === 'fastest') {
         endpoint += '&sort=fastest';
       } else if (sortingMethod === 'least-changes') {
         endpoint += '&sort=leastChanges';
       }
-      // Add more conditions for additional sorting options if needed
 
       fetch(endpoint)
         .then(response => response.json())
@@ -42,6 +42,32 @@
     function displayData(data) {
       const resultContainer = document.getElementById('result-container');
       resultContainer.textContent = JSON.stringify(data, null, 2);
+
+      const fetchButton = document.getElementById('fetch-button');
+
+      const downloadButton = document.createElement('button');
+      downloadButton.textContent = 'Download JSON';
+      downloadButton.addEventListener('click', () => {
+        const jsonData = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        // Open the JSON file in a new window
+        window.open(url, '_blank');
+        URL.revokeObjectURL(url);
+      });
+
+      fetchButton.parentNode.insertBefore(downloadButton, fetchButton.nextSibling);
+
+      const clearButton = document.createElement('button');
+      clearButton.textContent = 'Clear Data';
+      clearButton.addEventListener('click', () => {
+        resultContainer.textContent = '';
+        fetchButton.parentNode.removeChild(downloadButton);
+        fetchButton.parentNode.removeChild(clearButton);
+      });
+
+      fetchButton.parentNode.insertBefore(clearButton, downloadButton.nextSibling);
     }
   </script>
 </head>
@@ -59,7 +85,7 @@
       <option value="least-changes">Least Changes</option>
       <!-- Add more sorting options if needed -->
     </select>
-    <button onclick="fetchData()">Fetch Data</button>
+    <button id="fetch-button" onclick="fetchData()">Fetch Data</button>
   </div>
   <pre id="result-container"></pre>
 </body>

@@ -1,0 +1,46 @@
+swagger: '2.0'
+info:
+  title: TFL Journey API
+  description: API for retrieving journey information
+  version: 1.0.0
+basePath: /
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /journey:
+    get:
+      summary: Get journey information
+      parameters:
+        - name: startLocation
+          in: query
+          description: The start location for the journey
+          required: true
+          type: string
+        - name: destination
+          in: query
+          description: The destination for the journey
+          required: true
+          type: string
+        - name: dateTime
+          in: query
+          description: The date and time for the journey
+          required: true
+          type: string
+          format: date-time
+        - name: apiKey
+          in: query
+          description: The API key for accessing the service
+          required: true
+          type: string
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
