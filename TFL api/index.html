@@ -4,7 +4,7 @@
   <title>TFL Journey API</title>
   <style>
     #input-container {
-      width: 50%;
+      width: 45%;
       height: 20vh;
       float: left;
       overflow-y: scroll;
@@ -17,37 +17,148 @@
       const destination = "111 Buckingham Palace Road London, SW1W 0DT";
       const dateTime = document.getElementById('date-time').value;
       const apiKey = "92f8f284495c4629a9419d6df2efb899";
-      const sortingMethod = document.getElementById('sorting-method').value;
+      const travelMode = document.getElementById('travel-mode').value;
 
-      let endpoint = `https://api.tfl.gov.uk/Journey/JourneyResults/${startLocation}/to/${encodeURIComponent(destination)}?apiKey=${apiKey}`;
+      let endpoint = `https://api.tfl.gov.uk/Journey/JourneyResults/${encodeURIComponent(startLocation)}/to/${encodeURIComponent(destination)}?apiKey=${apiKey}`;
 
-      // Add more conditions for additional sorting options if needed
-      if (sortingMethod === 'fastest') {
-        endpoint += '&sort=fastest';
-      } else if (sortingMethod === 'least-changes') {
-        endpoint += '&sort=leastChanges';
+      if (travelMode === 'walking') {
+        endpoint += '&mode=walking';
+      } else if (travelMode === 'train') {
+        endpoint += '&mode=train';
+      } else if (travelMode === 'bus') {
+        endpoint += '&mode=bus';
+      } else if (travelMode === 'underground') {
+        endpoint += '&mode=tube';
+      } else if (travelMode === 'bike') {
+        endpoint += '&mode=cycle';
+      }
+
+      if (dateTime) {
+        endpoint += `&dateTime=${encodeURIComponent(dateTime)}`;
       }
 
       fetch(endpoint)
         .then(response => response.json())
         .then(data => {
           console.log(data); // Display the retrieved data in the browser console
-          displayData(data); // Pass the data to the displayData function
+          displayData(data, travelMode); // Pass the data and travel mode to the displayData function
         })
         .catch(error => {
           console.error('Error:', error);
         });
     }
 
-    function displayData(data) {
+    function displayData(data, travelMode) {
       const resultContainer = document.getElementById('result-container');
-      resultContainer.textContent = JSON.stringify(data, null, 2);
+      resultContainer.textContent = '';
+
+      if (data.journeys) {
+        if (travelMode === 'walking') {
+          const walkingJourneys = data.journeys.filter(journey => journey.legs.every(leg => leg.mode.name === 'walking'));
+
+          if (walkingJourneys.length > 0) {
+            walkingJourneys.forEach(journey => {
+              const journeyInfo = document.createElement('div');
+
+              const departureTime = journey.startDateTime;
+              const duration = journey.duration;
+
+              journeyInfo.textContent = `Departure Time: ${departureTime} - Duration: ${duration}`;
+              resultContainer.appendChild(journeyInfo);
+            });
+          } else {
+            resultContainer.textContent = 'No walking journeys found.';
+          }
+        } else if (travelMode === 'train') {
+          const trainJourneys = data.journeys.filter(journey => journey.legs.some(leg => leg.mode.name === 'tube'));
+
+          if (trainJourneys.length > 0) {
+            trainJourneys.forEach(journey => {
+              const journeyInfo = document.createElement('div');
+
+              const trainName = journey.legs.find(leg => leg.mode.name === 'tube').routeOptions[0].name;
+              const departureTime = journey.startDateTime;
+              const changes = journey.legs.filter(leg => leg.mode.name !== 'tube').length;
+
+              journeyInfo.textContent = `Train: ${trainName} - Departure Time: ${departureTime} - Changes: ${changes}`;
+              resultContainer.appendChild(journeyInfo);
+            });
+          } else {
+            resultContainer.textContent = 'No train journeys found.';
+          }
+        } else if (travelMode === 'bus') {
+          const busJourneys = data.journeys.filter(journey => journey.legs.some(leg => leg.mode.name === 'bus'));
+
+          if (busJourneys.length > 0) {
+            busJourneys.forEach(journey => {
+              const journeyInfo = document.createElement('div');
+
+              const busName = journey.legs.find(leg => leg.mode.name === 'bus').routeOptions[0].name;
+              const departureTime = journey.startDateTime;
+              const changes = journey.legs.filter(leg => leg.mode.name !== 'bus').length;
+
+              journeyInfo.textContent = `Bus: ${busName} - Departure Time: ${departureTime} - Changes: ${changes}`;
+              resultContainer.appendChild(journeyInfo);
+            });
+          } else {
+            resultContainer.textContent = 'No bus journeys found.';
+          }
+        } else if (travelMode === 'underground') {
+          const undergroundJourneys = data.journeys.filter(journey => journey.legs.some(leg => leg.mode.name === 'tube'));
+
+          if (undergroundJourneys.length > 0) {
+            undergroundJourneys.forEach(journey => {
+              const journeyInfo = document.createElement('div');
+
+              const tubeName = journey.legs.find(leg => leg.mode.name === 'tube').routeOptions[0].name;
+              const departureTime = journey.startDateTime;
+              const changes = journey.legs.filter(leg => leg.mode.name !== 'tube').length;
+
+              journeyInfo.textContent = `Tube: ${tubeName} - Departure Time: ${departureTime} - Changes: ${changes}`;
+              resultContainer.appendChild(journeyInfo);
+            });
+          } else {
+            resultContainer.textContent = 'No underground journeys found.';
+          }
+        } else if (travelMode === 'bike') {
+          const bikeJourneys = data.journeys.filter(journey => journey.legs.some(leg => leg.mode.name === 'cycle'));
+
+          if (bikeJourneys.length > 0) {
+            bikeJourneys.forEach(journey => {
+              const journeyInfo = document.createElement('div');
+
+              const departureTime = journey.startDateTime;
+              const duration = journey.duration;
+
+              journeyInfo.textContent = `Departure Time: ${departureTime} - Duration: ${duration}`;
+              resultContainer.appendChild(journeyInfo);
+            });
+          } else {
+            resultContainer.textContent = 'No bike journeys found.';
+          }
+        } else {
+          resultContainer.textContent = 'No journeys found for the selected travel mode.';
+        }
+      } else {
+        resultContainer.textContent = 'No journeys found.';
+      }
+
+      const downloadButton = document.getElementById('download-button');
+      const clearButton = document.getElementById('clear-button');
+
+      if (downloadButton) {
+        downloadButton.parentNode.removeChild(downloadButton);
+      }
+      if (clearButton) {
+        clearButton.parentNode.removeChild(clearButton);
+      }
 
       const fetchButton = document.getElementById('fetch-button');
 
-      const downloadButton = document.createElement('button');
-      downloadButton.textContent = 'Download JSON';
-      downloadButton.addEventListener('click', () => {
+      const newDownloadButton = document.createElement('button');
+      newDownloadButton.textContent = 'Open JSON';
+      newDownloadButton.id = 'download-button';
+      newDownloadButton.addEventListener('click', () => {
         const jsonData = JSON.stringify(data, null, 2);
         const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -57,17 +168,18 @@
         URL.revokeObjectURL(url);
       });
 
-      fetchButton.parentNode.insertBefore(downloadButton, fetchButton.nextSibling);
+      fetchButton.parentNode.insertBefore(newDownloadButton, fetchButton.nextSibling);
 
-      const clearButton = document.createElement('button');
-      clearButton.textContent = 'Clear Data';
-      clearButton.addEventListener('click', () => {
+      const newClearButton = document.createElement('button');
+      newClearButton.textContent = 'Clear Data';
+      newClearButton.id = 'clear-button';
+      newClearButton.addEventListener('click', () => {
         resultContainer.textContent = '';
-        fetchButton.parentNode.removeChild(downloadButton);
-        fetchButton.parentNode.removeChild(clearButton);
+        newDownloadButton.parentNode.removeChild(newDownloadButton);
+        newClearButton.parentNode.removeChild(newClearButton);
       });
 
-      fetchButton.parentNode.insertBefore(clearButton, downloadButton.nextSibling);
+      fetchButton.parentNode.insertBefore(newClearButton, newDownloadButton.nextSibling);
     }
   </script>
 </head>
@@ -78,12 +190,13 @@
     <input type="text" id="start-location">
     <label for="date-time">Date and Time:</label>
     <input type="datetime-local" id="date-time">
-    <label for="sorting-method">Sorting Method:</label>
-    <select id="sorting-method">
-      <option value="default">Default</option>
-      <option value="fastest">Fastest Journey</option>
-      <option value="least-changes">Least Changes</option>
-      <!-- Add more sorting options if needed -->
+    <label for="travel-mode">Travel Mode:</label>
+    <select id="travel-mode">
+      <option value="walking">Walking</option>
+      <option value="train">Train</option>
+      <option value="bus">Bus</option>
+      <option value="underground">Underground</option>
+      <option value="bike">Bike</option>
     </select>
     <button id="fetch-button" onclick="fetchData()">Fetch Data</button>
   </div>
