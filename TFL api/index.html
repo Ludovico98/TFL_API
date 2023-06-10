@@ -5,7 +5,7 @@
   <style>
     #input-container {
       width: 45%;
-      height: 20vh;
+      height: 25vh;
       float: left;
       overflow-y: scroll;
       background-color: #f2f2f2;
@@ -16,7 +16,7 @@
       const startLocation = document.getElementById('start-location').value;
       const destination = "111 Buckingham Palace Road London, SW1W 0DT";
       const dateTime = document.getElementById('date-time').value;
-      const apiKey = "92f8f284495c4629a9419d6df2efb899";
+      const apiKey = process.env.TFL_API_KEY;
       const travelMode = document.getElementById('travel-mode').value;
 
       let endpoint = `https://api.tfl.gov.uk/Journey/JourneyResults/${encodeURIComponent(startLocation)}/to/${encodeURIComponent(destination)}?apiKey=${apiKey}`;
@@ -52,9 +52,11 @@
       const resultContainer = document.getElementById('result-container');
       resultContainer.textContent = '';
 
-      if (data.journeys) {
+      const filteredJourneys = data.journeys.filter(journey => journey.startDateTime !== undefined);
+
+      if (filteredJourneys.length > 0) {
         if (travelMode === 'walking') {
-          const walkingJourneys = data.journeys.filter(journey => journey.legs.every(leg => leg.mode.name === 'walking'));
+          const walkingJourneys = filteredJourneys.filter(journey => journey.legs.every(leg => leg.mode.name === 'walking'));
 
           if (walkingJourneys.length > 0) {
             walkingJourneys.forEach(journey => {
@@ -67,10 +69,10 @@
               resultContainer.appendChild(journeyInfo);
             });
           } else {
-            resultContainer.textContent = 'No walking journeys found.';
+            resultContainer.textContent = `No walking journeys found for the selected date and time.`;
           }
         } else if (travelMode === 'train') {
-          const trainJourneys = data.journeys.filter(journey => journey.legs.some(leg => leg.mode.name === 'tube'));
+          const trainJourneys = filteredJourneys.filter(journey => journey.legs.some(leg => leg.mode.name === 'tube'));
 
           if (trainJourneys.length > 0) {
             trainJourneys.forEach(journey => {
@@ -84,10 +86,10 @@
               resultContainer.appendChild(journeyInfo);
             });
           } else {
-            resultContainer.textContent = 'No train journeys found.';
+            resultContainer.textContent = `No train journeys found for the selected date and time.`;
           }
         } else if (travelMode === 'bus') {
-          const busJourneys = data.journeys.filter(journey => journey.legs.some(leg => leg.mode.name === 'bus'));
+          const busJourneys = filteredJourneys.filter(journey => journey.legs.some(leg => leg.mode.name === 'bus'));
 
           if (busJourneys.length > 0) {
             busJourneys.forEach(journey => {
@@ -101,10 +103,10 @@
               resultContainer.appendChild(journeyInfo);
             });
           } else {
-            resultContainer.textContent = 'No bus journeys found.';
+            resultContainer.textContent = `No bus journeys found for the selected date and time.`;
           }
         } else if (travelMode === 'underground') {
-          const undergroundJourneys = data.journeys.filter(journey => journey.legs.some(leg => leg.mode.name === 'tube'));
+          const undergroundJourneys = filteredJourneys.filter(journey => journey.legs.some(leg => leg.mode.name === 'tube'));
 
           if (undergroundJourneys.length > 0) {
             undergroundJourneys.forEach(journey => {
@@ -118,10 +120,10 @@
               resultContainer.appendChild(journeyInfo);
             });
           } else {
-            resultContainer.textContent = 'No underground journeys found.';
+            resultContainer.textContent = `No underground journeys found for the selected date and time.`;
           }
         } else if (travelMode === 'bike') {
-          const bikeJourneys = data.journeys.filter(journey => journey.legs.some(leg => leg.mode.name === 'cycle'));
+          const bikeJourneys = filteredJourneys.filter(journey => journey.legs.some(leg => leg.mode.name === 'cycle'));
 
           if (bikeJourneys.length > 0) {
             bikeJourneys.forEach(journey => {
@@ -134,7 +136,7 @@
               resultContainer.appendChild(journeyInfo);
             });
           } else {
-            resultContainer.textContent = 'No bike journeys found.';
+            resultContainer.textContent = `No bike journeys found for the selected date and time.`;
           }
         } else {
           resultContainer.textContent = 'No journeys found for the selected travel mode.';
@@ -168,38 +170,51 @@
         URL.revokeObjectURL(url);
       });
 
-      fetchButton.parentNode.insertBefore(newDownloadButton, fetchButton.nextSibling);
-
       const newClearButton = document.createElement('button');
-      newClearButton.textContent = 'Clear Data';
+      newClearButton.textContent = 'Clear Results';
       newClearButton.id = 'clear-button';
       newClearButton.addEventListener('click', () => {
         resultContainer.textContent = '';
-        newDownloadButton.parentNode.removeChild(newDownloadButton);
-        newClearButton.parentNode.removeChild(newClearButton);
+        document.getElementById('start-location').value = '';
+        document.getElementById('date-time').value = '';
+        document.getElementById('travel-mode').value = '';
+        fetchButton.disabled = false;
       });
 
-      fetchButton.parentNode.insertBefore(newClearButton, newDownloadButton.nextSibling);
+      fetchButton.parentNode.appendChild(newDownloadButton);
+      fetchButton.parentNode.appendChild(newClearButton);
+
+      fetchButton.disabled = true;
     }
   </script>
 </head>
 <body>
+  <h1>TFL Journey API</h1>
+
   <div id="input-container">
-    <h1>TFL Journey API</h1>
+    <h3>Input</h3>
     <label for="start-location">Start Location:</label>
-    <input type="text" id="start-location">
-    <label for="date-time">Date and Time:</label>
-    <input type="datetime-local" id="date-time">
+    <input type="text" id="start-location" required><br><br>
+    <label for="date-time">Date and Time (optional):</label>
+    <input type="datetime-local" id="date-time"><br><br>
     <label for="travel-mode">Travel Mode:</label>
     <select id="travel-mode">
+      <option value="">Select Travel Mode</option>
       <option value="walking">Walking</option>
       <option value="train">Train</option>
       <option value="bus">Bus</option>
       <option value="underground">Underground</option>
       <option value="bike">Bike</option>
-    </select>
+    </select><br><br>
     <button id="fetch-button" onclick="fetchData()">Fetch Data</button>
   </div>
-  <pre id="result-container"></pre>
+
+  <div id="result-container">
+    <h3>Results</h3>
+  </div>
+
 </body>
 </html>
+
+
+

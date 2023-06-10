@@ -31,7 +31,7 @@ paths:
           required: true
           type: string
           format: date-time
-        - name: apiKey
+        - name: apiKey $({secrets.TFL_API_KEY})
           in: query
           description: The API key for accessing the service
           required: true
